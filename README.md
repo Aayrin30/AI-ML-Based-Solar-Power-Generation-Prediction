@@ -1,0 +1,1 @@
+# AI-ML-Based-Solar-Power-Generation-Prediction
