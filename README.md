@@ -58,9 +58,9 @@ This platform predicts solar power output, suggests optimal panel placement, and
 ---
 
 ## 📈 Example Graphs
-![Screenshot1](images/Screenshot 2025-09-17 155812.png)
-![Screenshot2](images/Screenshot 2025-09-17 155827.png)
-![Screenshot2](images/Screenshot 2025-09-17 155855.png)
+![Screenshot 1](images/Screenshot_1.png)
+![Screenshot 2](images/Screenshot_2.png)
+![Screenshot 3](images/Screenshot_3.png)
 
 
 ---
