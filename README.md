@@ -58,7 +58,10 @@ This platform predicts solar power output, suggests optimal panel placement, and
 ---
 
 ## 📈 Example Graphs
-*(Include screenshots of your dashboard graphs here)*
+![Screenshot1](images/Screenshot 2025-09-17 155812.png)
+![Screenshot2](images/Screenshot 2025-09-17 155827.png)
+![Screenshot2](images/Screenshot 2025-09-17 155855.png)
+
 
 ---
 
@@ -72,15 +75,15 @@ This platform predicts solar power output, suggests optimal panel placement, and
 
 ## 📂 Usage
 1. Clone the repository:
-   ```bash
-   git clone "https://github.com/Aayrin30/AI-ML-Based-Solar-Power-Generation-Prediction.git"
-   ```
+```bash
+git clone "https://github.com/Aayrin30/AI-ML-Based-Solar-Power-Generation-Prediction.git"
+```
 2. Install dependencies:
-  ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+pip install -r requirements.txt
+```
 3.Run the application:
-   ```bash
+```bash
 python manage.py runserver
-   ```
+```
 4.Open the dashboard in your browser and start predicting solar power output.
