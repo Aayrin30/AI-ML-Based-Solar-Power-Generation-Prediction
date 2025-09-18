@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Solify — Solar Power Prediction Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* extra small styling to complement Tailwind */
+    body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+    .glass { background: rgba(255,255,255,0.06); backdrop-filter: blur(6px); }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-sky-700 via-indigo-700 to-violet-800 text-slate-50">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-xl font-bold">☀️</div>
+        <div>
+          <h1 class="text-2xl font-extrabold">SolarSense</h1>
+          <p class="text-sm text-slate-200/70">V0 — Fast, friendly solar output predictions</p>
+        </div>
+      </div>
+      <div class="flex gap-3 items-center">
+        <button id="downloadReport" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg">Download CSV</button>
+        <button id="printView" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg">Print</button>
+      </div>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- left: inputs -->
+      <section class="glass p-5 rounded-2xl lg:col-span-1">
+        <h2 class="text-lg font-semibold mb-3">Site & Panel Details</h2>
+        <form id="inputForm" class="space-y-3">
+          <div>
+            <label class="text-sm">Location (city or lat,lon)</label>
+            <input id="location" class="w-full mt-1 p-2 rounded-md bg-white/5 focus:ring-2 focus:ring-sky-300" placeholder="e.g., Ahmedabad or 23.0225,72.5714" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-sm">Panel Area (m²)</label>
+              <input id="area" type="number" step="0.1" value="10" class="w-full mt-1 p-2 rounded-md bg-white/5" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-sm">Tilt (°)</label>
+              <input id="tilt" type="number" value="15" class="w-full mt-1 p-2 rounded-md bg-white/5" />
+            </div>
+            <div>
+              <label class="text-sm">Azimuth (°)</label>
+              <input id="azimuth" type="number" value="180" class="w-full mt-1 p-2 rounded-md bg-white/5" />
+            </div>
+          </div>
+
+          <div class="flex gap-2 mt-2">
+            <button type="button" id="predictBtn" class="flex-1 py-2 rounded-lg bg-amber-400 text-slate-900 font-semibold shadow-lg hover:scale-105 transform transition">Predict</button>
+            <button type="button" id="optimizeBtn" class="flex-1 py-2 rounded-lg bg-white/10 hover:bg-white/20">Optimize</button>
+          </div>
+        </form>
+
+        <div class="mt-4 p-3 rounded-lg bg-white/3">
+          <h3 class="text-sm font-medium">Quick tips</h3>
+          <ul class="text-xs mt-2 space-y-1 text-slate-200/80">
+            <li>Optimal tilt ≈ latitude (rule-of-thumb).</li>
+            <li>Azimuth 180° faces true south (northern hemisphere).</li>
+            <li>Increase area or efficiency to boost output.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- middle: charts -->
+      <section class="glass p-5 rounded-2xl lg:col-span-2">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h2 class="text-lg font-semibold">Predicted Output</h2>
+            <p class="text-sm text-slate-200/70">Hourly & daily estimates for the next 7 days (mocked for V0)</p>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-slate-200/80">Estimated weekly total</div>
+            <div id="weeklyTotal" class="text-2xl font-bold">-- kWh</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="p-3 bg-white/6 rounded-lg">
+            <canvas id="lineChart" height="220"></canvas>
+          </div>
+          <div class="p-3 bg-white/6 rounded-lg">
+            <canvas id="barChart" height="220"></canvas>
+          </div>
+        </div>
+
+        <div class="mt-4 bg-white/5 p-4 rounded-lg">
+          <h3 class="font-medium">Recommendations</h3>
+          <div id="recommendationBox" class="mt-2 text-sm text-slate-200/85">Run a prediction to see optimized tilt & azimuth and a comparison.</div>
+        </div>
+      </section>
+
+    </main>
+
+   
+  </div>
+
+<script>
+// --- Mock prediction engine for V0 ---
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+function parseLocation(loc){
+  // Accept "lat,lon" or city name (city ignored in mock)
+  if(!loc) return {lat:23.0, lon:72.5};
+  if(loc.includes(',')){ const [la,lo]=loc.split(',').map(s=>parseFloat(s)); if(!isNaN(la)&&!isNaN(lo)) return {lat:la, lon:lo}; }
+  // fallback mock lat/lon
+  return {lat:23.0, lon:72.5};
+}
+
+function generateMockSeries({lat,lon,area,eff,tilt,azimuth,startDate,days=7}){
+  // Returns daily kWh estimates for next `days`.
+  // Basic physics-inspired model: daily_irradiance_factor * area * eff * daylight_hours
+  // irradiance factor modulated by season (by day-of-year) and panel alignment (tilt & azimuth)
+  const results = [];
+  let sd = startDate? new Date(startDate): new Date();
+  for(let d=0; d<days; d++){
+    const date = new Date(sd); date.setDate(sd.getDate()+d);
+    const doy = Math.floor((Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(date.getFullYear(),0,0))/(1000*60*60*24));
+    // season factor: simple yearly sinusoid
+    const season = 0.85 + 0.25 * Math.cos((2*Math.PI*(doy-30))/365);
+    // daylight hours approx (depends on latitude & season)
+    const daylight = clamp(10 + 3*Math.cos((2*Math.PI*(doy-80))/365) * Math.cos(lat*Math.PI/180), 6, 14);
+    // alignment penalty: ideal tilt = lat, ideal azimuth = 180
+    const tiltPenalty = Math.max(0.6, 1 - Math.abs(tilt - lat)/90);
+    const azPenalty = Math.max(0.6, 1 - Math.abs(((azimuth-180+360)%360)-180)/180);
+    // clear-sky irradiance baseline kW/m2 (converted to daily energy kWh/m2 via daylight hours)
+    const baseIrradiance = 0.85; // kW/m2 typical average
+    const dailyEnergyPerM2 = baseIrradiance * daylight * season * 0.9; // 0.9 for atmospheric losses
+    const production_kWh = dailyEnergyPerM2 * area * (eff/100) * tiltPenalty * azPenalty;
+    // add noise for cloudiness/randomness
+    const cloudFactor = 0.7 + Math.random()*0.3; // 0.7-1
+    const finalVal = +(production_kWh * cloudFactor).toFixed(2);
+    results.push({date: date.toISOString().slice(0,10), kWh: finalVal});
+  }
+  return results;
+}
+
+function computeOptimalAngles(lat){
+  // Simple rule-of-thumb: tilt ~= latitude (or latitude - 10 in summer)
+  const optimalTilt = Math.round(lat);
+  const optimalAz = 180; // south
+  return {tilt: optimalTilt, azimuth: optimalAz};
+}
+
+// Chart setup
+let lineChart, barChart;
+function createCharts(dates, values){
+  const ctx1 = document.getElementById('lineChart');
+  if(lineChart) lineChart.destroy();
+  lineChart = new Chart(ctx1, {
+    type: 'line',
+    data: { labels: dates, datasets: [{ label: 'Daily kWh', data: values, fill: true, tension: 0.3, pointRadius:4, borderWidth:2 }] },
+    options: { plugins: { legend: { display:false } }, scales: { x:{ grid:{display:false}}, y:{ beginAtZero:true } } }
+  });
+  const ctx2 = document.getElementById('barChart');
+  if(barChart) barChart.destroy();
+  barChart = new Chart(ctx2, {
+    type: 'bar',
+    data: { labels: dates, datasets: [{ label: 'kWh', data: values, borderRadius:6 }] },
+    options: { plugins:{ legend:{display:false}}, scales:{ x:{ grid:{display:false}}, y:{ beginAtZero:true } } }
+  });
+}
+
+// UI handlers
+document.getElementById('predictBtn').addEventListener('click', ()=>{
+  const loc = document.getElementById('location').value;
+  const {lat,lon} = parseLocation(loc);
+  const area = parseFloat(document.getElementById('area').value) || 10;
+  const eff = parseFloat(document.getElementById('eff').value) || 18;
+  const tilt = parseFloat(document.getElementById('tilt').value) || lat;
+  const az = parseFloat(document.getElementById('azimuth').value) || 180;
+  const startDate = document.getElementById('startDate').value || new Date().toISOString().slice(0,10);
+
+  const baseSeries = generateMockSeries({lat,lon,area,eff,tilt,az,startDate,days:7});
+  const dates = baseSeries.map(r=>r.date);
+  const values = baseSeries.map(r=>r.kWh);
+  createCharts(dates, values);
+  const weeklyTotal = values.reduce((a,b)=>a+b,0).toFixed(2);
+  document.getElementById('weeklyTotal').innerText = weeklyTotal + ' kWh';
+
+  // Recommendations & optimization
+  const opt = computeOptimalAngles(lat);
+  const optSeries = generateMockSeries({lat,lon,area,eff,opt:1,tilt:opt.tilt,azimuth:opt.azimuth,startDate,days:7});
+  const optValues = optSeries.map(r=>r.kWh);
+  const optTotal = optValues.reduce((a,b)=>a+b,0).toFixed(2);
+  const gain = ((optTotal - weeklyTotal)/weeklyTotal*100).toFixed(1);
+  document.getElementById('recommendationBox').innerHTML = `<strong>Optimal tilt:</strong> ${opt.tilt}° &nbsp; <strong>Optimal azimuth:</strong> ${opt.azimuth}°<br><strong>Weekly total at current:</strong> ${weeklyTotal} kWh<br><strong>Weekly total at optimal:</strong> ${optTotal} kWh<br><strong>Estimated gain:</strong> ${isFinite(gain)?gain:'0.0'} %`;
+
+  // Store last result for CSV download
+  window.__lastPrediction = {dates, values, weeklyTotal, opt: {tilt:opt.tilt, azimuth:opt.azimuth, optTotal}};
+});
+
+// Optimize button: fill form with optimal values and re-run
+document.getElementById('optimizeBtn').addEventListener('click', ()=>{
+  const loc = document.getElementById('location').value; const {lat} = parseLocation(loc);
+  const opt = computeOptimalAngles(lat);
+  document.getElementById('tilt').value = opt.tilt;
+  document.getElementById('azimuth').value = opt.azimuth;
+  document.getElementById('predictBtn').click();
+});
+
+// CSV download
+function downloadCSV(){
+  const data = window.__lastPrediction;
+  if(!data){ alert('Run a prediction first'); return; }
+  let csv = 'date,kWh\n';
+  for(let i=0;i<data.dates.length;i++) csv += `${data.dates[i]},${data.values[i]}\n`;
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'solar_prediction.csv'; a.click(); URL.revokeObjectURL(url);
+}
+
+function createCharts(dates, values){
+  const ctx1 = document.getElementById('lineChart');
+  if(lineChart) lineChart.destroy();
+  lineChart = new Chart(ctx1, {
+    type: 'line',
+    data: { 
+      labels: dates, 
+      datasets: [{
+        label: 'Daily kWh', 
+        data: values, 
+        fill: true, 
+        tension: 0.3, 
+        pointRadius:4, 
+        borderWidth:2,
+        borderColor: '#facc15',        // bright amber line
+        backgroundColor: '#38bdf8', // soft amber fill
+        pointBackgroundColor: '#fbbf24' // bright point markers
+      }] 
+    },
+    options: { 
+      plugins: { legend: { display:false } }, 
+      scales: { 
+        x:{ grid:{ color:"rgba(255,255,255,0.1)" }}, 
+        y:{ beginAtZero:true, grid:{ color:"rgba(255,255,255,0.1)" }, ticks:{ color:"#fff" } } 
+      } 
+    }
+  });
+
+  const ctx2 = document.getElementById('barChart');
+  if(barChart) barChart.destroy();
+  barChart = new Chart(ctx2, {
+    type: 'bar',
+    data: { 
+      labels: dates, 
+      datasets: [{
+        label: 'kWh', 
+        data: values, 
+        borderRadius:6,
+        backgroundColor: '#38bdf8',
+      }] 
+    },
+    options: { 
+      plugins:{ legend:{display:false}}, 
+      scales:{ 
+        x:{ grid:{ color:"rgba(255,255,255,0.1)" }, ticks:{ color:"#fff" }}, 
+        y:{ beginAtZero:true, grid:{ color:"rgba(255,255,255,0.1)" }, ticks:{ color:"#fff" }} 
+      } 
+    }
+  });
+}
+
+document.getElementById('downloadReport').addEventListener('click', downloadCSV);
+document.getElementById('printView').addEventListener('click', ()=> window.print());
+
+// preload
+(function(){
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('startDate').value = today;
+})();
+</script>
+</body>
+</html>

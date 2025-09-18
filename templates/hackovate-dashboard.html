@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI/ML Solar Power Prediction Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'solar-blue': '#0ea5e9',
+                        'solar-green': '#10b981',
+                        'solar-dark': '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://helloteger.app.n8n.cloud/webhook/c5ef8374-73d7-4175-a512-ace9121e0c38/chat"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
+    <script type="module">
+        import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+
+        createChat({
+            webhookUrl: 'https://hackovate.app.n8n.cloud/webhook/1ee38206-f5a0-440c-a196-33af56bfaa37/chat',
+            initialMessages: [
+            "👋 Welcome to Solify! How can i help you?"
+            ]
+        });
+    </script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-green-50 min-h-screen">
+    <!-- Header -->
+    <!-- Header -->
+<header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+  <div class="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+    <div class="flex items-center justify-between">
+      <!-- Logo -->
+      <div class="flex items-center space-x-2">
+        <i class="fas fa-solar-panel text-solar-blue text-xl sm:text-2xl"></i>
+        <h1 class="text-lg sm:text-xl font-bold text-solar-dark">Solify</h1>
+      </div>
+
+      <!-- Right Side -->
+      <div class="flex items-center space-x-4">
+
+        <!-- Google Translate -->
+        <div id="google_translate_element"
+             class="relative">
+        </div>
+
+        <!-- Download Buttons -->
+        <div id="downloadBtns" class="hidden flex space-x-3">
+          <button id="downloadCsvBtn"
+            class="bg-solar-green text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm sm:text-base">
+            <i class="fas fa-file-csv mr-1"></i>CSV
+          </button>
+          <button id="downloadPdfBtn"
+            class="bg-solar-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm sm:text-base">
+            <i class="fas fa-file-pdf mr-1"></i>PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Custom CSS to restyle Google Translate -->
+<style>
+  /* Google branding ko hide karna (optional) */
+  .goog-logo-link, .goog-te-gadget span {
+    display: none !important;
+  }
+  .goog-te-gadget {
+    font-size: 0 !important;
+  }
+
+  /* Dropdown ko Tailwind style dena */
+  .goog-te-combo {
+    background-color: #ffffff !important; /* bg-white */
+    border: 1px solid #d1d5db !important; /* border-gray-300 */
+    border-radius: 0.5rem !important; /* rounded-lg */
+    padding: 0.5rem 2rem 0.5rem 0.75rem !important; /* px-3 py-2 */
+    font-size: 0.875rem !important; /* text-sm */
+    color: #1e293b !important; /* text-solar-dark */
+    appearance: none !important;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important; /* shadow-sm */
+    transition: all 0.2s ease-in-out;
+  }
+
+  .goog-te-combo:hover {
+    border-color: #0ea5e9 !important; /* solar-blue */
+  }
+
+  .goog-te-combo:focus {
+    outline: none !important;
+    border-color: #0ea5e9 !important;
+    box-shadow: 0 0 0 2px rgba(14,165,233,0.3) !important; /* ring-solar-blue/30 */
+  }
+</style>
+
+
+    <!-- Hero Section -->
+    <section class="container mx-auto px-3 sm:px-4 py-8 sm:py-12 text-center">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl sm:text-4xl md:text-6xl font-bold text-solar-dark mb-4 sm:mb-6 text-balance leading-tight">
+                AI/ML-Based Solar Power Prediction
+            </h2>
+            <p class="text-lg sm:text-xl text-gray-600 mb-6 sm:mb-8 text-pretty px-2">
+                Accurate, adaptive, and site-specific solar power insights powered by advanced machine learning algorithms.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-8 text-sm text-gray-500">
+                <div class="flex items-center justify-center">
+                    <i class="fas fa-chart-line text-solar-blue mr-2"></i>
+                    <span>Real-time Predictions</span>
+                </div>
+                <div class="flex items-center justify-center">
+                    <i class="fas fa-map-marker-alt text-solar-green mr-2"></i>
+                    <span>Location-based Analysis</span>
+                </div>
+                <div class="flex items-center justify-center">
+                    <i class="fas fa-cog text-solar-blue mr-2"></i>
+                    <span>Optimization Insights</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Location Permission Modal -->
+    <div id="locationModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div class="text-center">
+                <i class="fas fa-map-marker-alt text-solar-blue text-3xl sm:text-4xl mb-4"></i>
+                <h3 class="text-xl sm:text-2xl font-bold text-solar-dark mb-4">Location Access</h3>
+                <p class="text-gray-600 mb-6 text-sm sm:text-base">We need your location to provide accurate solar predictions for your area.</p>
+                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                    <button id="allowLocation" class="flex-1 bg-solar-blue text-white py-3 rounded-lg hover:bg-blue-600 transition-colors text-sm sm:text-base">
+                        Allow Location
+                    </button>
+                    <button id="manualLocation" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition-colors text-sm sm:text-base">
+                        Enter Manually
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    {% comment %} <main class="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
+        <div class="grid grid-cols-1 gap-6 lg:gap-8 max-w-5xl mx-auto">
+            <!-- Input Form -->
+            <div class="space-y-4 sm:space-y-6">
+                <!-- Location Card -->
+                <div class="bg-white/80 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-lg">
+                    <h3 class="text-lg sm:text-xl font-semibold text-solar-dark mb-4 flex items-center">
+                        <i class="fas fa-map-marker-alt text-solar-green mr-2"></i>
+                        Location
+                    </h3>
+                    <div id="locationDisplay" class="hidden">
+                        <p class="text-gray-600 text-sm sm:text-base" id="locationText"></p>
+                        <button id="changeLocation" class="text-solar-blue hover:underline text-sm mt-2">Change location</button>
+                    </div>
+                    <div id="manualLocationInput" class="hidden relative z-[9999]">
+                        <!--  Added location suggestions dropdown with proper mobile alignment -->
+                        <input type="text" id="cityInput" placeholder="Enter city, state" 
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-solar-blue focus:border-transparent text-sm sm:text-base">
+                        
+                    </div>
+                </div>
+
+                <!-- Solar Panel Parameters -->
+                <div class="bg-white/80 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-lg">
+                    <h3 class="text-lg sm:text-xl font-semibold text-solar-dark mb-4 flex items-center">
+                        <i class="fas fa-solar-panel text-solar-blue mr-2"></i>
+                        Panel Configuration
+                    </h3>
+                    <form id="solarForm" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Surface Area (m²)</label>
+                                <input type="number" id="surfaceArea" value="20" min="1" max="1000" 
+                                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-solar-blue focus:border-transparent text-sm sm:text-base">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tilt Angle (°)</label>
+                                <input type="number" id="tiltAngle" value="30" min="0" max="90"
+                                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-solar-blue focus:border-transparent text-sm sm:text-base">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Azimuth Angle (°)</label>
+                                <input type="number" id="azimuthAngle" value="180" min="0" max="360"
+                                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-solar-blue focus:border-transparent text-sm sm:text-base">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Predict Button -->
+                <button id="predictBtn" class="w-full bg-gradient-to-r from-solar-blue to-solar-green text-white py-4 rounded-2xl font-semibold text-base sm:text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200" onclick="submitFormToBackend()">
+                    <i class="fas fa-magic mr-2"></i>Predict Solar Output
+                </button>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="hidden space-y-6">
+                <!-- Main Prediction -->
+                <div class="bg-gradient-to-r from-solar-blue to-solar-green rounded-2xl p-6 sm:p-8 text-white shadow-lg">
+                    <div class="text-center">
+                        <i class="fas fa-bolt text-3xl sm:text-4xl mb-4"></i>
+                        <h3 class="text-xl sm:text-2xl font-semibold mb-2">Predicted Solar Output</h3>
+                        <div class="text-4xl sm:text-5xl font-bold mb-2" id="predictedOutput">0</div>
+                        <p class="text-lg sm:text-xl opacity-90">kWh five days</p>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Daily Power Generation -->
+                    <div class="bg-white/80 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-lg">
+                        <h3 class="text-lg sm:text-xl font-semibold text-solar-dark mb-4">Daily Power Generation</h3>
+                        <div class="h-64 sm:h-80">
+                            <canvas id="timeSeriesChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 5-Day Predicted Output -->
+                    <div class="bg-white/80 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-lg">
+                        <h3 class="text-lg sm:text-xl font-semibold text-solar-dark mb-4">5-Day Predicted Output</h3>
+                        <div class="h-64 sm:h-80">
+                            <canvas id="fiveDaysChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Config + Recommendations Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Current vs Optimal Config -->
+                    <div class="bg-white/80 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-lg">
+                        <h3 class="text-lg sm:text-xl font-semibold text-solar-dark mb-4">Current vs Optimal Configuration</h3>
+                        <div class="h-64 sm:h-80">
+                            <canvas id="comparisonChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Optimization Insights -->
+                    <div class="bg-white/80 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-lg">
+                        <h3 class="text-lg sm:text-xl font-semibold text-solar-dark mb-4 flex items-center">
+                            <i class="fas fa-lightbulb text-solar-green mr-2"></i>
+                            Optimization Recommendations
+                        </h3>
+                        <div id="insights" class="space-y-3"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main> {% endcomment %}
+
+    <main class="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    
+    <!-- LEFT: Inputs -->
+    <div class="space-y-6">
+      <!-- Location Card -->
+      <div class="bg-white/80 backdrop-blur-md rounded-2xl p-4 shadow-lg">
+        <h3 class="text-lg font-semibold text-solar-dark mb-3 flex items-center">
+          <i class="fas fa-map-marker-alt text-solar-green mr-2"></i> Location
+        </h3>
+        <div id="locationDisplay" class="hidden">
+          <p class="text-gray-600 text-sm" id="locationText"></p>
+          <button id="changeLocation" class="text-solar-blue hover:underline text-sm mt-2">Change location</button>
+        </div>
+        <div id="manualLocationInput" class="hidden relative">
+          <input type="text" id="cityInput" placeholder="Enter city, state"
+            class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-solar-blue text-sm">
+        </div>
+      </div>
+
+      <!-- Panel Config -->
+      <div class="bg-white/80 backdrop-blur-md rounded-2xl p-4 shadow-lg">
+        <h3 class="text-lg font-semibold text-solar-dark mb-3 flex items-center">
+          <i class="fas fa-solar-panel text-solar-blue mr-2"></i> Panel Configuration
+        </h3>
+        <form id="solarForm" class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Surface Area (m²)</label>
+              <input type="number" id="surfaceArea"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-solar-blue text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Tilt (°)</label>
+              <input type="number" id="tiltAngle"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-solar-blue text-sm">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Azimuth (°)</label>
+            <input type="number" id="azimuthAngle"
+              class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-solar-blue text-sm">
+          </div>
+        </form>
+      </div>
+
+      <!-- Predict Button -->
+      <button id="predictBtn"
+        class="w-full bg-gradient-to-r from-solar-blue to-solar-green text-white py-3 rounded-xl font-semibold text-sm hover:shadow-md hover:scale-[1.02] transition"
+        onclick="submitFormToBackend()">
+        <i class="fas fa-magic mr-2"></i> Predict Solar Output
+      </button>
+      
+              <!-- Weather Info (hidden initially) -->
+          <div id="weatherBox" class="hidden bg-white/80 rounded-2xl p-4 shadow-md">
+          <h3 class="text-sm font-semibold text-solar-dark mb-2 flex items-center">
+              <i class="fas fa-cloud-sun-rain text-solar-blue mr-1"></i> Current Weather
+          </h3>
+          <div id="weatherDetails" class="text-xs space-y-2 text-gray-700"></div>
+          </div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div id="resultsSection" class="space-y-6">
+
+    <!-- Placeholder (पहली बार दिखेगा) -->
+    <div id="resultsPlaceholder" class="flex flex-col items-center justify-center p-8 bg-white/70 rounded-2xl shadow-md text-center">
+        <i class="fas fa-solar-panel text-solar-blue text-5xl mb-4"></i>
+        <p class="text-solar-dark font-semibold text-lg">No predictions yet</p>
+        <p class="text-gray-500 text-sm">Enter your panel details and click <b>Predict</b> to see results.</p>
+    </div>
+
+    <!-- Main Prediction (शुरुआत में hidden रहे) -->
+    <div id="predictionCard" class="hidden bg-gradient-to-r from-solar-blue to-solar-green rounded-2xl p-5 text-white shadow-lg text-center">
+        <i class="fas fa-bolt text-2xl mb-2"></i>
+        <h3 class="text-lg font-semibold mb-1">Predicted Solar Output</h3>
+        <div id="predictedOutput" class="text-3xl font-bold">0</div>
+        <p class="text-sm opacity-80">kWh (5 days)</p>
+    </div>
+
+    <!-- बाकी charts वही रहेंगे -->
+    <div class="grid grid-cols-2 gap-4 hidden" id="chartsRow">
+        <div class="bg-white/80 rounded-2xl p-3 shadow-md">
+        <h3 class="text-sm font-semibold text-solar-dark mb-2">Today Hourly</h3>
+        <canvas id="timeSeriesChart" class="h-40"></canvas>
+        </div>
+        <div class="bg-white/80 rounded-2xl p-3 shadow-md">
+        <h3 class="text-sm font-semibold text-solar-dark mb-2">5-Day Output</h3>
+        <canvas id="fiveDaysChart" class="h-40"></canvas>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 hidden" id="configRow">
+        <div class="bg-white/80 rounded-2xl p-3 shadow-md">
+        <h3 class="text-sm font-semibold text-solar-dark mb-2">Config Comparison</h3>
+        <canvas id="comparisonChart" class="h-40"></canvas>
+        </div>
+        <div class="bg-white/80 rounded-2xl p-3 shadow-md">
+        <h3 class="text-sm font-semibold text-solar-dark mb-2 flex items-center">
+            <i class="fas fa-lightbulb text-solar-green mr-1"></i> Recommendations
+        </h3>
+        <div id="insights" class="text-xs space-y-2"></div>
+        </div>
+    </div>
+    </div>
+
+
+
+  </div>
+</main>
+<!-- google translate -->
+    <script type="text/javascript">
+            function googleTranslateElementInit() {
+                new google.translate.TranslateElement({
+                    pageLanguage: 'en',
+                    includedLanguages: 'en,hi,gu', // Limit to English, Hindi, and Gujarati
+                    layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+                }, 'google_translate_element');
+            }
+       </script>
+       <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <script>
+        // Global variables
+        let userLocation = null;
+        let timeSeriesChart = null;
+        let comparisonChart = null;
+        let latestData = null;
+        let latestRec = null;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            showLocationModal();
+            setupEventListeners();
+        });
+
+        function showLocationModal() {
+            document.getElementById('locationModal').classList.remove('hidden');
+        }
+
+        function hideLocationModal() {
+            document.getElementById('locationModal').classList.add('hidden');
+        }
+
+        function setupEventListeners() {
+            document.getElementById('allowLocation').addEventListener('click', requestLocation);
+            document.getElementById('manualLocation').addEventListener('click', showManualLocationInput);
+            document.getElementById('changeLocation').addEventListener('click', showManualLocationInput);
+            document.getElementById('downloadCsvBtn').addEventListener('click', () => downloadCSV(latestData, latestRec));
+            document.getElementById('downloadPdfBtn').addEventListener('click', () => downloadPDF(latestData, latestRec));
+
+            
+            //  Added location suggestions functionality
+            const cityInput = document.getElementById('cityInput');
+            cityInput.addEventListener('input', handleLocationInput);
+            cityInput.addEventListener('blur', function(e) {
+                // Delay hiding suggestions to allow clicking
+                setTimeout(() => {
+                    document.getElementById('locationSuggestions').classList.add('hidden');
+                }, 200);
+            });
+        }
+
+        //  Added location input handler with suggestions
+        async function handleLocationInput(e) {
+            const query = e.target.value.trim();
+            let suggestionsContainer = document.getElementById('locationSuggestions');
+
+            if (!suggestionsContainer) {
+                suggestionsContainer = document.createElement("div");
+                suggestionsContainer.id = "locationSuggestions";
+                suggestionsContainer.className = "absolute bg-white border border-gray-200 rounded-lg shadow-lg z-[9999] max-h-48 overflow-y-auto hidden";
+                document.body.appendChild(suggestionsContainer);
+            }
+
+            const inputRect = e.target.getBoundingClientRect();
+            suggestionsContainer.style.position = "absolute";
+            suggestionsContainer.style.top = `${inputRect.bottom + window.scrollY}px`;
+            suggestionsContainer.style.left = `${inputRect.left + window.scrollX}px`;
+            suggestionsContainer.style.width = `${inputRect.width}px`;
+
+            if (query.length < 3) {
+                suggestionsContainer.classList.add("hidden");
+                return;
+            }
+
+            try {
+                const GEOAPIFY_KEY = "8a461b974b7241adb1db7aa4d8af4f14";
+                const url = `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&limit=5&filter=countrycode:in&apiKey=${GEOAPIFY_KEY}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.features && data.features.length > 0) {
+                    suggestionsContainer.innerHTML = data.features.map(place => {
+                        const props = place.properties;
+                        return `
+                            <div class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 text-sm sm:text-base"
+                                onclick="selectLocation('${props.city || props.county || "Unknown City"}', '${props.state || "Unknown State"}', ${place.geometry.coordinates[1]}, ${place.geometry.coordinates[0]})">
+                                <div class="font-medium text-gray-800">${props.city || props.county || "Unknown City"}</div>
+                                <div class="text-gray-500 text-xs sm:text-sm">${props.state || "Unknown State"}</div>
+                            </div>
+                        `;
+                    }).join('');
+                    suggestionsContainer.classList.remove("hidden");
+                } else {
+                    suggestionsContainer.classList.add("hidden");
+                }
+            } catch (error) {
+                console.error("Autocomplete failed:", error);
+                suggestionsContainer.classList.add("hidden");
+            }
+        }
+
+
+
+        //  Added location selection function
+        function selectLocation(city, state, lat, lon) {
+            userLocation = { city, state, lat, lon };
+            document.getElementById('cityInput').value = `${city}, ${state}`;
+            document.getElementById('locationSuggestions').classList.add('hidden');
+            displayLocation();
+        }
+
+
+        function requestLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    async function (position) {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+
+                        try {
+                            const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`;
+                            const response = await fetch(url);
+                            const data = await response.json();
+
+                            if (data) {
+                                userLocation = {
+                                    lat,
+                                    lon,
+                                    area: data.locality || data.localityInfo?.administrative?.[2]?.name || "Unknown Area",
+                                    city: data.city || data.locality || "Unknown City",
+                                    state: data.principalSubdivision || "Unknown State"
+                                };
+
+                                console.log("User location (BigDataCloud):", userLocation);
+                                displayLocation();
+                                hideLocationModal();
+                            } else {
+                                alert("Unable to fetch location details.");
+                                showManualLocationInput();
+                            }
+                        } catch (error) {
+                            console.error("Reverse geocoding failed:", error);
+                            showManualLocationInput();
+                        }
+                    },
+                    function (error) {
+                        console.error("Geolocation error:", error);
+                        showManualLocationInput();
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by this browser.");
+                showManualLocationInput();
+            }
+        }
+
+
+
+        function getMockLocation(lat, lon) {
+            // Mock function - in real app, use reverse geocoding API
+            return locationSuggestions[Math.floor(Math.random() * locationSuggestions.length)];
+        }
+
+        function showManualLocationInput() {
+            document.getElementById('locationDisplay').classList.add('hidden');
+            document.getElementById('manualLocationInput').classList.remove('hidden');
+            hideLocationModal();
+        }
+
+        function displayLocation() {
+            const locationText = document.getElementById('locationText');
+            locationText.textContent = `${userLocation.city}, ${userLocation.state}`;
+            document.getElementById('locationDisplay').classList.remove('hidden');
+            document.getElementById('manualLocationInput').classList.add('hidden');
+        }
+
+        async function submitFormToBackend() {
+            if (!userLocation) {
+                alert("Please set your location first.");
+                return;
+            }
+
+            const btn = document.getElementById('predictBtn');
+            btn.disabled = true;
+            btn.textContent = "Predicting..."; // show loading
+
+            const surfaceArea = parseFloat(document.getElementById('surfaceArea').value);
+            const tiltAngle = parseFloat(document.getElementById('tiltAngle').value);
+            const azimuthAngle = parseFloat(document.getElementById('azimuthAngle').value);
+
+            const payload = {
+                surfaceArea,
+                tiltAngle,
+                azimuthAngle,
+                lat: userLocation.lat,
+                lon: userLocation.lon
+            };
+
+            try {
+                const response = await fetch("/api/submit-form/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                console.log("Backend Response:", result);
+
+                if (result.status === "success") {
+                    updateDashboard(result.data);
+                } else {
+                    alert("Error: " + result.message);
+                }
+            } catch (error) {
+                console.error("Form submit failed:", error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Predict Solar Output"; // reset
+            }
+        }
+
+
+        function getTodayISTDate() {
+            const now = new Date();
+            const istOffset = 5.5 * 60 * 60 * 1000; // 5h30m in ms
+            const istTime = new Date(now.getTime() + istOffset - now.getTimezoneOffset() * 60000);
+            return istTime.toISOString().split("T")[0];
+        }
+
+        function updateDashboard(data) {
+            // Placeholder hide, results show
+            document.getElementById('resultsPlaceholder').classList.add('hidden');
+            document.getElementById('predictionCard').classList.remove('hidden');
+            document.getElementById('chartsRow').classList.remove('hidden');
+            document.getElementById('configRow').classList.remove('hidden');
+
+            document.getElementById('downloadBtns').classList.remove('hidden');
+
+            latestData = data;
+            latestRec = data.recommendation;
+
+            const rec = data.recommendation;
+            document.getElementById('predictedOutput').textContent = rec.current_total || 0;
+
+            const insightsDiv = document.getElementById("insights");
+            insightsDiv.innerHTML = `
+                <div class="p-3 bg-green-50 rounded-lg">
+                    <b>Current Tilt:</b> ${rec.current_tilt}° | 
+                    <b>Azimuth:</b> ${rec.current_azimuth}°
+                </div>
+                <div class="p-3 bg-blue-50 rounded-lg">
+                    <b>Optimal Tilt:</b> ${rec.optimal_tilt}° | 
+                    <b>Azimuth:</b> ${rec.optimal_azimuth}°
+                </div>
+                <div class="p-3 bg-yellow-50 rounded-lg">
+                    <b>Gain:</b> ${rec.potential_gain_percent}% more output possible
+                </div>
+            `;
+
+            // Charts
+            const today = getTodayISTDate();
+            const todayHourly = data.hourly.filter(h => h.datetime.split("T")[0] === today);
+
+            // Weather Info
+            if (data.weather) {
+                const w = data.weather;
+                const weatherBox = document.getElementById("weatherBox");
+                const details = document.getElementById("weatherDetails");
+
+                details.innerHTML = `
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>🌡️ <b>Temp:</b> ${w.temperature} °C</div>
+                        <div>💧 <b>Humidity:</b> ${w.humidity}%</div>
+                        <div>🌬️ <b>Wind:</b> ${w.wind_speed} m/s</div>
+                        <div>☁️ <b>Clouds:</b> ${w.cloud_cover}%</div>
+                        <div>☀️ <b>GHI:</b> ${w.ghi} W/m²</div>
+                        <div>🔆 <b>DNI:</b> ${w.dni} W/m²</div>
+                        <div>🌤️ <b>DHI:</b> ${w.dhi} W/m²</div>
+                        <div>📊 <b>KT:</b> ${w.kt}</div>
+                    </div>
+                `;
+                weatherBox.classList.remove("hidden");
+            }
+
+
+            createLineChart(todayHourly);
+            createFiveDaysChart(data.daily);
+            createBarChart(data.daily, rec);
+        }
+
+
+
+
+        let fiveDaysChart = null;
+
+        function createFiveDaysChart(dailyData) {
+            const ctx = document.getElementById('fiveDaysChart').getContext('2d');
+            if (fiveDaysChart) fiveDaysChart.destroy();
+
+            fiveDaysChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dailyData.map(d => d.datetime.split("T")[0]), // Dates
+                    datasets: [{
+                        label: "Daily kWh",
+                        data: dailyData.map(d => d.daily_kwh),
+                        backgroundColor: "#10b981"
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.raw.toFixed(2) + " kWh";
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function createLineChart(hourlyData) {
+            const ctx = document.getElementById('timeSeriesChart').getContext('2d');
+            if (timeSeriesChart) timeSeriesChart.destroy();
+
+            timeSeriesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: hourlyData.map(h => {
+                        const [date, time] = h.datetime.split("T");
+                        return time.slice(0,5); // "HH:MM"
+                    }),
+                    datasets: [{
+                        label: "Hourly kWh",
+                        data: hourlyData.map(h => h.predicted_kwh),
+                        borderColor: "#0ea5e9",
+                        backgroundColor: "rgba(14, 165, 233, 0.2)",
+                        fill: true,
+                        tension: 0.3  // smooth line
+                    }]
+                }
+            });
+        }
+
+
+        function createBarChart(dailyData, rec) {
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+            if (comparisonChart) comparisonChart.destroy();
+
+            comparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ["Current Config", "Optimal Config"],
+                    datasets: [
+                        {
+                            label: "Total kWh (5 Days)",
+                            data: [rec.current_total, rec.optimal_total],
+                            backgroundColor: ["#0ea5e9", "#10b981"]
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.dataset.label + ": " + context.raw + " kWh";
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+
+
+
+        function downloadCSV(data, rec) {
+            const dailyRows = data.daily.map(d => `${d.datetime.split("T")[0]},${d.daily_kwh.toFixed(2)}`).join("\n");
+
+            const weeklyTotal = data.daily.reduce((sum, d) => sum + d.daily_kwh, 0);
+            const monthlyEstimate = (weeklyTotal / data.daily.length) * 30;
+
+            const csvContent = `Solar Power Prediction Report
+        Location,${userLocation.city}, ${userLocation.state}
+        Predicted Daily Output (First Day),${data.daily[0].daily_kwh.toFixed(2)} kWh
+        Weekly Total (5 Days),${weeklyTotal.toFixed(2)} kWh
+        Monthly Estimate,${monthlyEstimate.toFixed(2)} kWh
+
+        Daily Predictions:
+        Date,Daily kWh
+        ${dailyRows}
+
+        Recommendations:
+        Current Tilt,${rec.current_tilt}°
+        Current Azimuth,${rec.current_azimuth}°
+        Optimal Tilt,${rec.optimal_tilt}°
+        Optimal Azimuth,${rec.optimal_azimuth}°
+        Potential Gain,${rec.potential_gain_percent}%`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'solar-prediction-report.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function downloadPDF(data, rec) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const weeklyTotal = data.daily.reduce((sum, d) => sum + d.daily_kwh, 0);
+            const monthlyEstimate = (weeklyTotal / data.daily.length) * 30;
+
+            doc.setFontSize(16);
+            doc.text("Solar Power Prediction Report", 20, 20);
+
+            doc.setFontSize(12);
+            doc.text(`Location: ${userLocation.city}, ${userLocation.state}`, 20, 35);
+            doc.text(`Weekly Total (5 Days): ${weeklyTotal.toFixed(2)} kWh`, 20, 45);
+            doc.text(`Monthly Estimate: ${monthlyEstimate.toFixed(2)} kWh`, 20, 55);
+
+            doc.text("Daily Predictions:", 20, 70);
+            let y = 80;
+            data.daily.forEach(d => {
+                doc.text(`${d.datetime.split("T")[0]} - ${d.daily_kwh.toFixed(2)} kWh`, 25, y);
+                y += 10;
+            });
+
+            doc.text("Recommendations:", 20, y + 10);
+            y += 20;
+            doc.text(`Current Tilt: ${rec.current_tilt}°`, 25, y); y += 10;
+            doc.text(`Current Azimuth: ${rec.current_azimuth}°`, 25, y); y += 10;
+            doc.text(`Optimal Tilt: ${rec.optimal_tilt}°`, 25, y); y += 10;
+            doc.text(`Optimal Azimuth: ${rec.optimal_azimuth}°`, 25, y); y += 10;
+            doc.text(`Potential Gain: ${rec.potential_gain_percent}%`, 25, y);
+
+            doc.save('solar-prediction-report.pdf');
+        }
+
+    </script>
+</body>
+</html>
